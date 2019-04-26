@@ -116,7 +116,6 @@ int main(int argc, char* argv[])
         // hidKeysDown returns information about which buttons have been
         // just pressed in this frame compared to the previous one
         u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        u64 kUp = hidKeysUp(CONTROLLER_P1_AUTO);
 
         if ((kDown & KEY_DLEFT) && !isPaused)
         {
@@ -132,8 +131,7 @@ int main(int argc, char* argv[])
 
             isPaused = true;
         }
-        
-        if((kUp & KEY_DLEFT) && isPaused)
+        else if((kDown & KEY_DLEFT) && isPaused)
         {   
             fprintf(file, "released key\n");
             fflush(file);
@@ -141,8 +139,22 @@ int main(int argc, char* argv[])
 
             isPaused = false;
         }
+
+        if((kDown & KEY_DUP) && isPaused)
+        {
+            svcCloseHandle(m_debugHandle);
+
+            svcSleepThread(1e+9L/60);
+
+            u64 pid = 0;
+            Result getapp = pmdmntGetApplicationPid(&pid);
+			svcDebugActiveProcess(&m_debugHandle, pid);
+            fprintf(file, "pid is: 0x%016lx\n", pid);
+            fprintf(file, "getApp returns: 0x%016x\n", getapp);
+            fflush(file);
+        }
         
-        svcSleepThread(1e+9L/30);
+        svcSleepThread(1e+9L/60);
     }
 
     // Deinitialization and resources clean up code can go here.
