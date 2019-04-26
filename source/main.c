@@ -65,6 +65,23 @@ void __attribute__((weak)) __appInit(void)
 
     __libnx_init_time();*/
 
+    // Initialize system for pmdmnt
+    rc = setsysInitialize();
+    if (R_SUCCEEDED(rc)) {
+        SetSysFirmwareVersion fw;
+        rc = setsysGetFirmwareVersion(&fw);
+        if (R_SUCCEEDED(rc))
+            hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
+        setsysExit();
+    }
+
+    fprintf(file, "sys");
+    fflush(file);
+
+    Result pmdmnt = pmdmntInitialize();
+    fprintf(file, "pmdmnt: 0x%016x\n", pmdmnt);
+    fflush(file);
+
     fprintf(file, "Done\n");
     fflush(file);
     fclose(file);
@@ -104,10 +121,12 @@ int main(int argc, char* argv[])
             fprintf(file, "held key\n");
             fflush(file);
 
-            u64 pid;
-            pmdmntGetApplicationPid(&pid);
+            u64 pid = 0;
+            Result getapp = pmdmntGetApplicationPid(&pid);
 			svcDebugActiveProcess(&m_debugHandle, pid);
             fprintf(file, "pid is: 0x%016lx\n", pid);
+            fprintf(file, "getApp returns: 0x%016x\n", getapp);
+            fflush(file);
         }
         else
         {   
