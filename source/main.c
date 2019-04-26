@@ -92,7 +92,7 @@ void __attribute__((weak)) __appExit(void)
 int main(int argc, char* argv[])
 {
     ViDisplay disp;
-    rc = viOpenDefaultDisplay(&disp);
+    Result rc = viOpenDefaultDisplay(&disp);
     if(R_FAILED(rc))
         fatalSimple(rc);
     Event vsync_event;
@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
         rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
         if(R_FAILED(rc))
             fatalSimple(rc);
-
+    }
     // Deinitialization and resources clean up code can go here.
     return 0;
 }
