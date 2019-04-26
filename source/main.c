@@ -46,17 +46,10 @@ void __attribute__((weak)) __appInit(void)
 
     fsdevMountSdmc();
 
-    FILE *file = fopen("sdmc:/startlog.txt", "wt");
-    fprintf(file, "opened\n");
-    fflush(file);
-
     // Enable this if you want to use HID.
     rc = hidInitialize();
     if (R_FAILED(rc))
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));
-
-    fprintf(file, "hid\n");
-    fflush(file);
 
     //Enable this if you want to use time.
     /*rc = timeInitialize();
@@ -75,16 +68,7 @@ void __attribute__((weak)) __appInit(void)
         setsysExit();
     }
 
-    fprintf(file, "sys");
-    fflush(file);
-
-    Result pmdmnt = pmdmntInitialize();
-    fprintf(file, "pmdmnt: 0x%016x\n", pmdmnt);
-    fflush(file);
-
-    fprintf(file, "Done\n");
-    fflush(file);
-    fclose(file);
+    pmdmntInitialize();
 }
 
 void __attribute__((weak)) userAppExit(void);
@@ -103,7 +87,6 @@ void __attribute__((weak)) __appExit(void)
 int main(int argc, char* argv[])
 {
     // Initialization code can go here.
-    FILE *file = fopen("sdmc:/runlog.txt", "wt");
     bool isPaused = false;
 
     // Your code / main loop goes here.
@@ -119,24 +102,15 @@ int main(int argc, char* argv[])
 
         if ((kDown & KEY_DLEFT) && !isPaused)
         {
-            fprintf(file, "hit key\n");
-            fflush(file);
-
             u64 pid = 0;
-            Result getapp = pmdmntGetApplicationPid(&pid);
+            pmdmntGetApplicationPid(&pid);
 			svcDebugActiveProcess(&m_debugHandle, pid);
-            fprintf(file, "pid is: 0x%016lx\n", pid);
-            fprintf(file, "getApp returns: 0x%016x\n", getapp);
-            fflush(file);
 
             isPaused = true;
         }
         else if((kDown & KEY_DLEFT) && isPaused)
         {   
-            fprintf(file, "released key\n");
-            fflush(file);
             svcCloseHandle(m_debugHandle);
-
             isPaused = false;
         }
 
@@ -147,11 +121,8 @@ int main(int argc, char* argv[])
             svcSleepThread(1e+9L/60);
 
             u64 pid = 0;
-            Result getapp = pmdmntGetApplicationPid(&pid);
+            pmdmntGetApplicationPid(&pid);
 			svcDebugActiveProcess(&m_debugHandle, pid);
-            fprintf(file, "pid is: 0x%016lx\n", pid);
-            fprintf(file, "getApp returns: 0x%016x\n", getapp);
-            fflush(file);
         }
         
         svcSleepThread(1e+9L/60);
