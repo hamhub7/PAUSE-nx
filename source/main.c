@@ -68,6 +68,11 @@ void __attribute__((weak)) __appInit(void)
         setsysExit();
     }
 
+
+    rc = viInitialize(ViServiceType_System);
+    if(R_FAILED(rc))
+        fatalSimple(rc);
+
     pmdmntInitialize();
 }
 
@@ -86,6 +91,16 @@ void __attribute__((weak)) __appExit(void)
 // Main program entrypoint
 int main(int argc, char* argv[])
 {
+    ViDisplay disp;
+    rc = viOpenDefaultDisplay(&disp);
+    if(R_FAILED(rc))
+        fatalSimple(rc);
+    Event vsync_event;
+    rc = viGetDisplayVsyncEvent(&disp, &vsync_event);
+    if(R_FAILED(rc))
+        fatalSimple(rc);
+
+
     // Initialization code can go here.
     bool isPaused = false;
 
@@ -125,8 +140,9 @@ int main(int argc, char* argv[])
 			svcDebugActiveProcess(&m_debugHandle, pid);
         }
         
-        svcSleepThread(1e+9L/60);
-    }
+        rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
+        if(R_FAILED(rc))
+            fatalSimple(rc);
 
     // Deinitialization and resources clean up code can go here.
     return 0;
