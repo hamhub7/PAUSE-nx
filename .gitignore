@@ -1,0 +1,4 @@
+*.nsp
+*.elf
+*.nso
+/.vscode

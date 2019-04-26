@@ -104,6 +104,7 @@ int main(int argc, char* argv[])
 {
     // Initialization code can go here.
     FILE *file = fopen("sdmc:/runlog.txt", "wt");
+    bool isPaused = false;
 
     // Your code / main loop goes here.
     // If you need threads, you can use threadCreate etc.
@@ -114,11 +115,12 @@ int main(int argc, char* argv[])
 
         // hidKeysDown returns information about which buttons have been
         // just pressed in this frame compared to the previous one
-        u64 kDown = hidKeysHeld(CONTROLLER_P1_AUTO);
+        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 kUp = hidKeysUp(CONTROLLER_P1_AUTO);
 
-        if (kDown & KEY_DLEFT)
+        if ((kDown & KEY_DLEFT) && !isPaused)
         {
-            fprintf(file, "held key\n");
+            fprintf(file, "hit key\n");
             fflush(file);
 
             u64 pid = 0;
@@ -127,12 +129,17 @@ int main(int argc, char* argv[])
             fprintf(file, "pid is: 0x%016lx\n", pid);
             fprintf(file, "getApp returns: 0x%016x\n", getapp);
             fflush(file);
+
+            isPaused = true;
         }
-        else
+        
+        if((kUp & KEY_DLEFT) && isPaused)
         {   
-            fprintf(file, "did not hold key\n");
+            fprintf(file, "released key\n");
             fflush(file);
-            svcBreakDebugProcess(m_debugHandle);
+            svcCloseHandle(m_debugHandle);
+
+            isPaused = false;
         }
         
         svcSleepThread(1e+9L/30);
