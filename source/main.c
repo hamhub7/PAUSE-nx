@@ -107,6 +107,7 @@ int main(int argc, char* argv[])
             u64 pid;
             pmdmntGetApplicationPid(&pid);
 			svcDebugActiveProcess(&m_debugHandle, pid);
+            fprintf(file, "pid is: 0x%016lx\n", pid);
         }
         else
         {   
