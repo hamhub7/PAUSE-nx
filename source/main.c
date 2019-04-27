@@ -16,6 +16,11 @@ char   nx_inner_heap[INNER_HEAP_SIZE];
 
 Handle m_debugHandle;
 
+// Control Scheme Bools (read from config file)
+bool DPadCont = false;
+bool KeyboardCont = true;
+bool TwoPCont = false;
+
 void __libnx_initheap(void)
 {
 	void*  addr = nx_inner_heap;
@@ -68,12 +73,16 @@ void __attribute__((weak)) __appInit(void)
         setsysExit();
     }
 
-
     rc = viInitialize(ViServiceType_System);
     if(R_FAILED(rc))
         fatalSimple(rc);
 
     pmdmntInitialize();
+
+    FILE *file = fopen("sdmc:/atmosphere/titles/0100000000000125/config.txt", "r");
+
+    fclose(file);
+    
 }
 
 void __attribute__((weak)) userAppExit(void);
@@ -100,7 +109,6 @@ int main(int argc, char* argv[])
     if(R_FAILED(rc))
         fatalSimple(rc);
 
-
     // Initialization code can go here.
     bool isPaused = false;
 
@@ -113,31 +121,90 @@ int main(int argc, char* argv[])
 
         // hidKeysDown returns information about which buttons have been
         // just pressed in this frame compared to the previous one
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-
-        if ((kDown & KEY_DLEFT) && !isPaused)
+        if(DPadCont)
         {
-            u64 pid = 0;
-            pmdmntGetApplicationPid(&pid);
-			svcDebugActiveProcess(&m_debugHandle, pid);
+            u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
 
-            isPaused = true;
-        }
-        else if((kDown & KEY_DLEFT) && isPaused)
-        {   
-            svcCloseHandle(m_debugHandle);
-            isPaused = false;
-        }
+            if ((kDown & KEY_DLEFT) && !isPaused)
+            {
+                u64 pid = 0;
+                pmdmntGetApplicationPid(&pid);
+			    svcDebugActiveProcess(&m_debugHandle, pid);
 
-        if((kDown & KEY_DUP) && isPaused)
+                isPaused = true;
+            }
+            else if((kDown & KEY_DLEFT) && isPaused)
+            {   
+                svcCloseHandle(m_debugHandle);
+                isPaused = false;
+            }
+
+            if((kDown & KEY_DUP) && isPaused)
+            {
+             svcCloseHandle(m_debugHandle);
+
+             svcSleepThread(1e+9L/60);
+
+                u64 pid = 0;
+                pmdmntGetApplicationPid(&pid);
+			    svcDebugActiveProcess(&m_debugHandle, pid);
+            }
+        }
+        if(KeyboardCont)
         {
-            svcCloseHandle(m_debugHandle);
+            if (hidKeyboardDown(KBD_DOWN) && !isPaused)
+            {
+                u64 pid = 0;
+                pmdmntGetApplicationPid(&pid);
+			    svcDebugActiveProcess(&m_debugHandle, pid);
 
-            svcSleepThread(1e+9L/60);
+                isPaused = true;
+            }
+            else if(hidKeyboardDown(KBD_DOWN) && isPaused)
+            {   
+                svcCloseHandle(m_debugHandle);
+                isPaused = false;
+            }
 
-            u64 pid = 0;
-            pmdmntGetApplicationPid(&pid);
-			svcDebugActiveProcess(&m_debugHandle, pid);
+            if(hidKeyboardDown(KBD_RIGHT) && isPaused)
+            {
+             svcCloseHandle(m_debugHandle);
+
+             svcSleepThread(1e+9L/60);
+
+                u64 pid = 0;
+                pmdmntGetApplicationPid(&pid);
+			    svcDebugActiveProcess(&m_debugHandle, pid);
+            }
+        }
+        if(TwoPCont)
+        {
+            u64 kDown = hidKeysDown(CONTROLLER_PLAYER_2);
+
+            if ((kDown & KEY_B) && !isPaused)
+            {
+                u64 pid = 0;
+                pmdmntGetApplicationPid(&pid);
+			    svcDebugActiveProcess(&m_debugHandle, pid);
+
+                isPaused = true;
+            }
+            else if((kDown & KEY_B) && isPaused)
+            {   
+                svcCloseHandle(m_debugHandle);
+                isPaused = false;
+            }
+
+            if((kDown & KEY_A) && isPaused)
+            {
+             svcCloseHandle(m_debugHandle);
+
+             svcSleepThread(1e+9L/60);
+
+                u64 pid = 0;
+                pmdmntGetApplicationPid(&pid);
+			    svcDebugActiveProcess(&m_debugHandle, pid);
+            }
         }
         
         rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
