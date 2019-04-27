@@ -18,8 +18,7 @@ Handle m_debugHandle;
 
 // Control Scheme Bools (read from config file)
 bool DPadCont = false;
-bool KeyboardCont = true;
-bool TwoPCont = false;
+bool KeyboardCont = false;
 
 void __libnx_initheap(void)
 {
@@ -168,38 +167,11 @@ int main(int argc, char* argv[])
 
             if(hidKeyboardDown(KBD_RIGHT) && isPaused)
             {
-             svcCloseHandle(m_debugHandle);
-
-             svcSleepThread(1e+9L/60);
-
-                u64 pid = 0;
-                pmdmntGetApplicationPid(&pid);
-			    svcDebugActiveProcess(&m_debugHandle, pid);
-            }
-        }
-        if(TwoPCont)
-        {
-            u64 kDown = hidKeysDown(CONTROLLER_PLAYER_2);
-
-            if ((kDown & KEY_B) && !isPaused)
-            {
-                u64 pid = 0;
-                pmdmntGetApplicationPid(&pid);
-			    svcDebugActiveProcess(&m_debugHandle, pid);
-
-                isPaused = true;
-            }
-            else if((kDown & KEY_B) && isPaused)
-            {   
                 svcCloseHandle(m_debugHandle);
-                isPaused = false;
-            }
 
-            if((kDown & KEY_A) && isPaused)
-            {
-             svcCloseHandle(m_debugHandle);
-
-             svcSleepThread(1e+9L/60);
+                rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
+                if(R_FAILED(rc))
+                    fatalSimple(rc);
 
                 u64 pid = 0;
                 pmdmntGetApplicationPid(&pid);
