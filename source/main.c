@@ -6,6 +6,9 @@
 // Include the main libnx system header, for Switch development
 #include <switch.h>
 
+// Include INI library
+#include "ini.h"
+
 // Sysmodules should not use applet*.
 u32 __nx_applet_type = AppletType_None;
 
@@ -17,7 +20,7 @@ char   nx_inner_heap[INNER_HEAP_SIZE];
 Handle m_debugHandle;
 
 // Control Scheme Bools (read from config file)
-bool DPadCont = false;
+bool DPadCont = true;
 bool KeyboardCont = false;
 
 void __libnx_initheap(void)
@@ -78,10 +81,8 @@ void __attribute__((weak)) __appInit(void)
 
     pmdmntInitialize();
 
-    FILE *file = fopen("sdmc:/atmosphere/titles/0100000000000125/config.txt", "r");
+    //"sdmc:/atmosphere/titles/0100000000000125/config.txt"
 
-    fclose(file);
-    
 }
 
 void __attribute__((weak)) userAppExit(void);
