@@ -1,18 +1,30 @@
 // Include the most common headers from the C standard library
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
+#include <map>
+#include <iterator>
+#include <algorithm>
+#include <time.h>
 
 // Include the main libnx system header, for Switch development
 #include <switch.h>
 
-// Sysmodules should not use applet*.
-u32 __nx_applet_type = AppletType_None;
+extern "C"
+{
+    // Sysmodules should not use applet*.
+    u32 __nx_applet_type = AppletType_None;
 
-// Adjust size as needed.
-#define INNER_HEAP_SIZE 0x100
-size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-char   nx_inner_heap[INNER_HEAP_SIZE];
+    // Adjust size as needed.
+    #define INNER_HEAP_SIZE 0x8000
+    size_t nx_inner_heap_size = INNER_HEAP_SIZE;
+    char   nx_inner_heap[INNER_HEAP_SIZE];
+
+    void __libnx_init_time(void);
+    void __libnx_initheap(void);
+    void __appInit(void);
+    void __appExit(void);
+}
 
 Handle m_debugHandle;
 
@@ -52,11 +64,11 @@ void __attribute__((weak)) __appInit(void)
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));
 
     //Enable this if you want to use time.
-    /*rc = timeInitialize();
+    rc = timeInitialize();
     if (R_FAILED(rc))
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_Time));
 
-    __libnx_init_time();*/
+    //__libnx_init_time();
 
     // Initialize system for pmdmnt
     rc = setsysInitialize();
@@ -73,9 +85,6 @@ void __attribute__((weak)) __appInit(void)
         fatalSimple(rc);
 
     pmdmntInitialize();
-
-    //"sdmc:/atmosphere/titles/0100000000000125/config.txt"
-
 }
 
 void __attribute__((weak)) userAppExit(void);
@@ -85,20 +94,51 @@ void __attribute__((weak)) __appExit(void)
     // Cleanup default services.
     fsdevUnmountAll();
     fsExit();
-    //timeExit();//Enable this if you want to use time.
+    timeExit();//Enable this if you want to use time.
     hidExit();// Enable this if you want to use HID.
     smExit();
 }
 
-//logger for the inputs (thanks jakibaki)
-void log_to_sd(const char *fmt, ...) 
+std::map<int, std::string> translator
 {
-    FILE* f = fopen("/recording.txt", "w");
-    va_list myargs;
-    va_start(myargs, fmt);
-    vfprintf(f, fmt, myargs);
-    va_end(myargs);
-    fclose(f);
+    {KEY_A, "KEY_A"},
+    {KEY_B, "KEY_B"},
+    {KEY_X, "KEY_X"},
+    {KEY_Y, "KEY_Y"},
+    {KEY_LSTICK, "KEY_LSTICK"},
+    {KEY_RSTICK, "KEY_RSTICK"},
+    {KEY_L, "KEY_L"},
+    {KEY_R, "KEY_R"},
+    {KEY_ZL, "KEY_ZL"},
+    {KEY_ZR, "KEY_ZR"},
+    {KEY_PLUS, "KEY_PLUS"},
+    {KEY_MINUS, "KEY_MINUS"},
+    {KEY_DLEFT, "KEY_DLEFT"},
+    {KEY_DUP, "KEY_DUP"},
+    {KEY_DRIGHT, "KEY_DRIGHT"},
+    {KEY_DDOWN, "KEY_DDOWN"},
+};
+
+std::string translateKeys(u64 keys)
+{
+    std::string returnString;
+
+    for(std::pair<int, std::string> element : translator)
+    {
+        if(element.first & keys)
+        {
+            returnString.append(element.second);
+            returnString.push_back(';');
+        }
+    }
+
+    if(!returnString.empty())
+    {
+        returnString.pop_back();
+        return returnString;
+    }
+
+    return "NONE";
 }
 
 // Main program entrypoint
@@ -116,6 +156,7 @@ int main(int argc, char* argv[])
     // Initialization code can go here.
     bool isPaused = false;
     int frameCount = 0;
+    FILE* f;
 
     // Your code / main loop goes here.
     // If you need threads, you can use threadCreate etc.
@@ -134,11 +175,13 @@ int main(int argc, char* argv[])
 
             isPaused = true;
             frameCount = 0;
+            f = fopen("/pausenx/recording.txt", "w");
         }
         else if(hidKeyboardDown(KBD_DOWN) && isPaused)
         {   
             svcCloseHandle(m_debugHandle);
             isPaused = false;
+            fclose(f);
         }
 
         if(hidKeyboardDown(KBD_RIGHT) && isPaused)
@@ -146,14 +189,14 @@ int main(int argc, char* argv[])
             svcCloseHandle(m_debugHandle);
 
             //Gather button and stick data
-            u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-            std::string keyStr;
+            u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
+            std::string keyString = translateKeys(kHeld);
 
             JoystickPosition posLeft, posRight;
             hidJoystickRead(&posLeft, CONTROLLER_P1_AUTO, JOYSTICK_LEFT);
             hidJoystickRead(&posRight, CONTROLLER_P1_AUTO, JOYSTICK_RIGHT);
 
-            log_to_sd("" + frameCount + " " + keyString)
+            fprintf(f, "%i %s %d;%d %d;%d\n", frameCount, keyString.c_str(), posLeft.dx, posLeft.dy, posRight.dx, posRight.dy);
 
             rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
             if(R_FAILED(rc))
