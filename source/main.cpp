@@ -6,6 +6,7 @@
 #include <iterator>
 #include <algorithm>
 #include <time.h>
+#include <sstream>
 
 // Include the main libnx system header, for Switch development
 #include <switch.h>
@@ -68,7 +69,7 @@ void __attribute__((weak)) __appInit(void)
     if (R_FAILED(rc))
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_Time));
 
-    //__libnx_init_time();
+    __libnx_init_time();
 
     // Initialize system for pmdmnt
     rc = setsysInitialize();
@@ -175,7 +176,14 @@ int main(int argc, char* argv[])
 
             isPaused = true;
             frameCount = 0;
-            f = fopen("/pausenx/recording.txt", "w");
+
+            time_t unixTime = time(NULL);
+            struct tm* timeStruct = localtime((const time_t *)&unixTime);
+            std::stringstream ss;
+            std::string filename;
+            ss << "/pausenx/recording-" << timeStruct->tm_mon + 1 << "_" << timeStruct->tm_mday << "_" << timeStruct->tm_year + 1900 << "-" << timeStruct->tm_hour << "_" << timeStruct->tm_min << "_" << timeStruct->tm_sec << ".txt";
+            ss >> filename;
+            f = fopen(filename.c_str(), "w");
         }
         else if(hidKeyboardDown(KBD_DOWN) && isPaused)
         {   
@@ -196,7 +204,8 @@ int main(int argc, char* argv[])
             hidJoystickRead(&posLeft, CONTROLLER_P1_AUTO, JOYSTICK_LEFT);
             hidJoystickRead(&posRight, CONTROLLER_P1_AUTO, JOYSTICK_RIGHT);
 
-            fprintf(f, "%i %s %d;%d %d;%d\n", frameCount, keyString.c_str(), posLeft.dx, posLeft.dy, posRight.dx, posRight.dy);
+            if(!(keyString == "NONE" && posLeft.dx == 0 && posLeft.dy == 0 && posRight.dy == 0 && posRight.dy == 0))
+                fprintf(f, "%i %s %d;%d %d;%d\n", frameCount, keyString.c_str(), posLeft.dx, posLeft.dy, posRight.dx, posRight.dy);
 
             rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
             if(R_FAILED(rc))
