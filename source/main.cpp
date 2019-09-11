@@ -90,6 +90,17 @@ void __attribute__((weak)) __appExit(void)
     smExit();
 }
 
+//logger for the inputs (thanks jakibaki)
+void log_to_sd(const char *fmt, ...) 
+{
+    FILE* f = fopen("/recording.txt", "w");
+    va_list myargs;
+    va_start(myargs, fmt);
+    vfprintf(f, fmt, myargs);
+    va_end(myargs);
+    fclose(f);
+}
+
 // Main program entrypoint
 int main(int argc, char* argv[])
 {
@@ -104,6 +115,7 @@ int main(int argc, char* argv[])
 
     // Initialization code can go here.
     bool isPaused = false;
+    int frameCount = 0;
 
     // Your code / main loop goes here.
     // If you need threads, you can use threadCreate etc.
@@ -121,6 +133,7 @@ int main(int argc, char* argv[])
             svcDebugActiveProcess(&m_debugHandle, pid);
 
             isPaused = true;
+            frameCount = 0;
         }
         else if(hidKeyboardDown(KBD_DOWN) && isPaused)
         {   
@@ -132,6 +145,16 @@ int main(int argc, char* argv[])
         {
             svcCloseHandle(m_debugHandle);
 
+            //Gather button and stick data
+            u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+            std::string keyStr;
+
+            JoystickPosition posLeft, posRight;
+            hidJoystickRead(&posLeft, CONTROLLER_P1_AUTO, JOYSTICK_LEFT);
+            hidJoystickRead(&posRight, CONTROLLER_P1_AUTO, JOYSTICK_RIGHT);
+
+            log_to_sd("" + frameCount + " " + keyString)
+
             rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
             if(R_FAILED(rc))
                 fatalSimple(rc);
@@ -139,6 +162,8 @@ int main(int argc, char* argv[])
             u64 pid = 0;
             pmdmntGetApplicationPid(&pid);
             svcDebugActiveProcess(&m_debugHandle, pid);
+
+            frameCount++;
         }
         
         rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
