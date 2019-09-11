@@ -6,9 +6,6 @@
 // Include the main libnx system header, for Switch development
 #include <switch.h>
 
-// Include INI library
-#include "ini.h"
-
 // Sysmodules should not use applet*.
 u32 __nx_applet_type = AppletType_None;
 
@@ -18,10 +15,6 @@ size_t nx_inner_heap_size = INNER_HEAP_SIZE;
 char   nx_inner_heap[INNER_HEAP_SIZE];
 
 Handle m_debugHandle;
-
-// Control Scheme Bools (read from config file)
-bool DPadCont = true;
-bool KeyboardCont = true;
 
 void __libnx_initheap(void)
 {
@@ -121,63 +114,31 @@ int main(int argc, char* argv[])
 
         // hidKeysDown returns information about which buttons have been
         // just pressed in this frame compared to the previous one
-        if(DPadCont)
+        if (hidKeyboardDown(KBD_DOWN) && !isPaused)
         {
-            u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+            u64 pid = 0;
+            pmdmntGetApplicationPid(&pid);
+            svcDebugActiveProcess(&m_debugHandle, pid);
 
-            if ((kDown & KEY_DLEFT) && !isPaused)
-            {
-                u64 pid = 0;
-                pmdmntGetApplicationPid(&pid);
-			    svcDebugActiveProcess(&m_debugHandle, pid);
-
-                isPaused = true;
-            }
-            else if((kDown & KEY_DLEFT) && isPaused)
-            {   
-                svcCloseHandle(m_debugHandle);
-                isPaused = false;
-            }
-
-            if((kDown & KEY_DUP) && isPaused)
-            {
-             svcCloseHandle(m_debugHandle);
-
-             svcSleepThread(1e+9L/60);
-
-                u64 pid = 0;
-                pmdmntGetApplicationPid(&pid);
-			    svcDebugActiveProcess(&m_debugHandle, pid);
-            }
+            isPaused = true;
         }
-        if(KeyboardCont)
+        else if(hidKeyboardDown(KBD_DOWN) && isPaused)
+        {   
+            svcCloseHandle(m_debugHandle);
+            isPaused = false;
+        }
+
+        if(hidKeyboardDown(KBD_RIGHT) && isPaused)
         {
-            if (hidKeyboardDown(KBD_DOWN) && !isPaused)
-            {
-                u64 pid = 0;
-                pmdmntGetApplicationPid(&pid);
-			    svcDebugActiveProcess(&m_debugHandle, pid);
+            svcCloseHandle(m_debugHandle);
 
-                isPaused = true;
-            }
-            else if(hidKeyboardDown(KBD_DOWN) && isPaused)
-            {   
-                svcCloseHandle(m_debugHandle);
-                isPaused = false;
-            }
+            rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
+            if(R_FAILED(rc))
+                fatalSimple(rc);
 
-            if(hidKeyboardDown(KBD_RIGHT) && isPaused)
-            {
-                svcCloseHandle(m_debugHandle);
-
-                rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
-                if(R_FAILED(rc))
-                    fatalSimple(rc);
-
-                u64 pid = 0;
-                pmdmntGetApplicationPid(&pid);
-			    svcDebugActiveProcess(&m_debugHandle, pid);
-            }
+            u64 pid = 0;
+            pmdmntGetApplicationPid(&pid);
+            svcDebugActiveProcess(&m_debugHandle, pid);
         }
         
         rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);

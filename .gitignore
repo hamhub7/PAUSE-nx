@@ -2,5 +2,7 @@
 *.elf
 *.nso
 *.npdm
+*.nacp
+*.nro
 .vscode/*
 build/*
