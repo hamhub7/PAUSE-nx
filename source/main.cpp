@@ -51,23 +51,23 @@ void __attribute__((weak)) __appInit(void)
 
     rc = smInitialize();
     if (R_FAILED(rc))
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
     rc = fsInitialize();
     if (R_FAILED(rc))
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 
     fsdevMountSdmc();
 
     // Enable this if you want to use HID.
     rc = hidInitialize();
     if (R_FAILED(rc))
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));
+        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));
 
     //Enable this if you want to use time.
     rc = timeInitialize();
     if (R_FAILED(rc))
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_Time));
+        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_Time));
 
     __libnx_init_time();
 
@@ -83,7 +83,7 @@ void __attribute__((weak)) __appInit(void)
 
     rc = viInitialize(ViServiceType_System);
     if(R_FAILED(rc))
-        fatalSimple(rc);
+        fatalThrow(rc);
 
     pmdmntInitialize();
 }
@@ -148,11 +148,11 @@ int main(int argc, char* argv[])
     ViDisplay disp;
     Result rc = viOpenDefaultDisplay(&disp);
     if(R_FAILED(rc))
-        fatalSimple(rc);
+        fatalThrow(rc);
     Event vsync_event;
     rc = viGetDisplayVsyncEvent(&disp, &vsync_event);
     if(R_FAILED(rc))
-        fatalSimple(rc);
+        fatalThrow(rc);
 
     // Initialization code can go here.
     bool isPaused = false;
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
         if (hidKeyboardDown(KBD_DOWN) && !isPaused)
         {
             u64 pid = 0;
-            pmdmntGetApplicationPid(&pid);
+            pmdmntGetApplicationProcessId(&pid);
             svcDebugActiveProcess(&m_debugHandle, pid);
 
             isPaused = true;
@@ -209,10 +209,10 @@ int main(int argc, char* argv[])
 
             rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
             if(R_FAILED(rc))
-                fatalSimple(rc);
+                fatalThrow(rc);
 
             u64 pid = 0;
-            pmdmntGetApplicationPid(&pid);
+            pmdmntGetApplicationProcessId(&pid);
             svcDebugActiveProcess(&m_debugHandle, pid);
 
             frameCount++;
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
         
         rc = eventWait(&vsync_event, 0xFFFFFFFFFFF);
         if(R_FAILED(rc))
-            fatalSimple(rc);
+            fatalThrow(rc);
     }
     // Deinitialization and resources clean up code can go here.
     return 0;
